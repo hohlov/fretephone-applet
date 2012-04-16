@@ -154,7 +154,7 @@ class Phonenic(gnomeapplet.Applet):
 
               #print words_in_sent
               if len(words_in_sent)> 0 and self.pronounced_word != words_in_sent[0]:
-                      f = Forvo('f1572f7ed5160a5d80e361bb9664dfff')
+                      f = Forvo('')
                       f.pronounce(word = words_in_sent[0].encode("utf8"), language = 'fr', file_name = None)
                       self.pronounced_word = words_in_sent[0]
               self.pronouncing = False
