@@ -1,0 +1,711 @@
+# This file is part of Cicero TTS.
+#   Cicero TTS: A Small, Fast and Free Text-To-Speech Engine.
+#   Copyright (C) 2003-2008 Nicolas Pitre  <nico@cam.org>
+#   Copyright (C) 2003-2008 Stéphane Doyon <s.doyon@videotron.ca>
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License version 2.
+#   See the accompanying COPYING file for more details.
+#
+#   This program comes with ABSOLUTELY NO WARRANTY.
+
+# Les filtres préparent le texte de sorte qu'il ne contient plus
+# de caractères étranges (non-printables, tabs, newlines, etc),
+# ni de chiffres,
+# ni de tirets...
+# Les ponctuations qui restent dans le texte après les filtres, et
+# qui sont gérées par les règles: , . ; : ! ?
+# L'apostrophe y reste aussi.
+# Les autres symboles doivent être éliminés par les filtres:
+#     #"/$%&*()-_=+[]{}<>^` et autres.
+# Le dernier filtre compresse les suites de plusieurs espaces en un seul.
+# Dans les patterns des filtres et des règles, _ est un caractère spécial
+# qui est remplacé par un espace, à moins d'être précédé de \.
+# Les règles doivent conserver les séparations de mot. Toute règle
+# qui consomme un _ (espace) doit produire un _ ou & ou -.
+# En sortie, le phonème _ délimite les mots séparés "ordinairement", tandis
+# que & est un séparateur "virtuel" pour montrer le passage à un autre
+# mot lorsqu'il y a liaison.
+# - introduit une pause pour le h aspiré.
+
+
+# phonem	type	duration
+PHO	@	V	60
+PHO	a	V	83
+PHO	a~	V	111
+PHO	b	C	75
+PHO	d	C	68
+PHO	e	V	86
+PHO	e~	V	96
+PHO	E	V	82
+PHO	f	C	123
+PHO	g	C	55
+PHO	H	C	58
+PHO	i	V	79
+PHO	j	C	61
+PHO	k	C	81
+PHO	l	C	50
+PHO	m	C	77
+PHO	n	C	64
+PHO	N	C	72
+PHO	o	V	83
+PHO	o~	V	111
+PHO	O	V	95
+PHO	p	C	97
+PHO	R	C	54
+PHO	s	C	90
+PHO	S	C	120
+PHO	t	C	88
+PHO	u	V	87
+PHO	v	C	78
+PHO	w	C	65
+PHO	y	V	74
+PHO	z	C	87
+PHO	Z	C	80
+PHO	2	V	107
+PHO	9	V	99
+PHO	9~	V	102
+
+PHO	_	P	0
+# Les suivantes servent pour la prosodie et les indexes mais ne se rendent
+# pas jusqu'à MBROLA.
+PHO	&	P	0
+PHO	-	P	14
+PHO	.	P	190
+PHO	,	P	150
+PHO	:	P	170
+PHO	!	P	200
+PHO	?	P	200
+
+PROSO_SPEED _ 0, 0
+PROSO_PITCH _ [1] {"0 100"}
+PROSO_PITCH _ [2] {"100 110", "100 100"}
+PROSO_PITCH _ [3] {"0 120", "100 110", "100 100"}
+PROSO_PITCH _ [4] {"0 120", "", "100 110", "100 100"}
+
+PROSO_SPEED & 0, 7
+PROSO_PITCH & [1] {"0 100"}
+PROSO_PITCH & [2] {"100 110", "100 100"}
+PROSO_PITCH & [3] {"0 120", "100 110", "100 100"}
+PROSO_PITCH & [4] {"0 120", "", "100 110", "100 100"}
+
+PROSO_SPEED - 0, 7
+PROSO_PITCH - [1] {"0 100"}
+PROSO_PITCH - [2] {"100 110", "100 100"}
+PROSO_PITCH - [3] {"0 120", "100 110", "100 100"}
+PROSO_PITCH - [4] {"0 120", "", "100 110", "100 100"}
+
+PROSO_SPEED , -20, 10
+PROSO_PITCH , [1] {"100 135"}
+PROSO_PITCH , [2] {"100 115", "100 135"}
+PROSO_PITCH , [3] {"0 110", "100 115", "100 135"}
+PROSO_PITCH , [4] {"0 120", "100 110", "100 130", "100 135"}
+
+PROSO_SPEED . -30, 10
+PROSO_PITCH . [1] {"100 70"}
+PROSO_PITCH . [2] {"100 110", "100 70"}
+PROSO_PITCH . [3] {"0 120", "100 100", "100 70"}
+PROSO_PITCH . [4] {"0 110", "100 120", "100 100", "100 70"}
+
+PROSO_SPEED ! -200, 10
+PROSO_PITCH ! [1] {"0 110 30 180 100 110"}
+PROSO_PITCH ! [2] {"100 130", "20 180 100 110"}
+PROSO_PITCH ! [3] {"100 120", "100 130", "20 180 100 110"}
+PROSO_PITCH ! [4] {"0 120", "100 110", "100 130", "30 180 100 110"}
+
+PROSO_SPEED ? -30, 10
+PROSO_PITCH ? [1] {"0 110 100 170"}
+PROSO_PITCH ? [2] {"100 120", "100 170"}
+PROSO_PITCH ? [3] {"0 110", "100 120", "100 170"}
+PROSO_PITCH ? [4] {"0 120", "100 110", "100 130", "100 170"}
+
+PROSO_SPEED : -20, 10
+PROSO_PITCH : [1] {"0 100 100 135"}
+PROSO_PITCH : [2] {"100 115", "100 135"}
+PROSO_PITCH : [3] {"0 110", "100 115", "100 135"}
+PROSO_PITCH : [4] {"0 120", "100 110", "100 130", "100 135"}
+
+
+CLASS V [aeiouyàâéèêëîïôöùûü]			# voyelles
+CLASS C [bcçdfghjklmnñpqrstvwxz]		# consonnes
+CLASS L (?:V|C)					# toutes les lettres
+CLASS P [\,\.\;\:\!\?]				# ponctuations
+CLASS N \d					# chiffres
+CLASS S (?:^|_|P|\')				# limite gauche d'un mot
+CLASS T (?:$|_|P)				# limite droite d'un mot
+
+# règles de substitutions
+
+[[ à ]] -> a					## déjà
+[[ â ]] -> a  					## pâte
+
+[[ ae ]] T -> e					## reggae vitae
+[[ aen ]] -> a ã				## caen
+[[ ae ]] -> a e					## maestro 
+[[ aî ]] -> ε 					## maître
+[[ aim ]] (C|T)	-> ẽ				## faim
+[[ ain ]] (C|T)	-> ẽ				## pain
+f [[ ai ]] sV	-> ə				## faisons faisan
+[[ a ]] il(l|s?T) -> a				## paille bail
+[[ aie ]] me -> ε				## paiement
+[[ ai ]] -> ε					## aile
+[[ am ]] [bp] -> ã				## camp
+[[ am ]] m -> a					## programmation
+[[ am ]] n -> a m				## amnistie
+[[ a ]] nn -> a					## manne
+[[ an ]] (C|T)	-> ã				## ancien
+[[ aoû ]]  -> u					## août
+[[ au ]] lT -> ɔ				## Paul
+[[ au ]] -> o					## autruche
+p [[ ay ]] s -> ε i				## pays paysage
+[[ ay ]] (C|T) -> ε				## aymé
+[[ ay ]] -> ε j					## paye
+[[ a ]] -> a					## bateau
+
+S [[ b ]] T -> b e				## b
+[[ byte ]] T -> b a i t			## byte
+[[ bytes ]] T -> b a i t s			## bytes
+[[ bb ]] -> b					## abbé
+om [[ b ]] T ->					## plomb applomb
+[[ b ]] -> b					## aube
+
+S [[ c ]] T -> s e				## c
+[[ c' ]] -> s					## c'est
+[[ ç ]] -> s					## rançon
+[[ cch ]] -> k 					## bacchanale
+[[ cc ]] [eèéêiîy] -> k s 			## accéder
+[[ cc ]] -> k 					## occuper
+ar [[ ch ]] ét -> k 				## archétype architecte
+or [[ ch ]] (?!es?T)V -> k 			## orchestre orchidée
+sy [[ ch ]] (?!i)V -> k 			## psycho
+S [[ ch ]] or -> k 				## chorale
+(yn|(?<!C)) [[ ch ]] ([lnrst]|T) -> k 		## chrétien
+[[ ch ]] -> ʃ					## chien
+[[ ck ]] -> k					## nickel
+[[ cqu ]] -> k					## grecque
+[[ cq ]] -> k					## pecq
+[sx] [[ c ]] [eèéêiîy] ->			## scène
+[[ c ]] [eèéêiîy] -> s 				## cède
+(bl?an|cler|tchou|taba) [[ c ]] s?T ->		## banc blanc leclerc
+se [[ c ]] ond -> g				## seconde secondaire
+[[ c ]] -> k 					## recoin donc
+
+S [[ d ]] T -> d e				## d
+[[ dd ]] -> d					## addition
+(S|C)[lst]an [[ d ]] s?T -> d			## stand land
+(C|qu)[aeo]n [[ d_ ]] h?V -> t &	 	## grand ami, grand homme
+(C|qu)[aeo]n [[ d ]] s?T ->	 		## grand marchand
+[[ dt ]] T ->	 				## rembrandt
+r [[ d ]] T ->					## lourd placard
+[[ d ]] -> d					## don bled
+
+S [[ e ]] T -> ə				## e
+[[ eau ]] -> o					## bateau cheveaux
+j [[ e ]] a ->					## Jean Jeanne
+sp [[ ect ]] s?T -> ε				## aspect suspect
+S(tré)?pi [[ ed ]] -> e				## pied
+[[ ee ]] -> i					## meeting
+Scl [[ ef ]] s?T -> e				## cle
+[[ ein ]] (C|T) -> ẽ				## peindre
+[[ e ]] il -> ε					## vieille
+[[ ei ]] -> ε					## neige
+[[ eî ]] -> ε					## 
+[[ ell ]] -> ε l l				## selle
+[[ el ]] (C|T) -> ε l				## caramel celsius
+[[ em ]] me -> a				## femme patiemment
+[[ em ]] [bmp] -> ã				## emmencher décembre
+S [[ en ]] T -> ã				## en
+S [[ en ]] (h|V) -> ã n			## enharmonique enivrer
+(C|qu) [[ en ]] ds?T -> ã			## comprend dépend
+pati [[ en ]] -> ã				## patient patience
+S [[ en ]] nu -> ã				## ennui
+[[ en ]] n -> ε 				## penne mienne ennemi
+[[ ent ]] sT -> ã				## dents couvents présents
+éC [[ ent ]] T -> ã				## récent différent élément
+(SC|cc) [[ ent ]] T -> ã			## cent vent lent dent accent
+S(ja|vin)c [[ ent ]] T -> ã			## Vincent sous-jacent
+[is]ci [[ ent ]] T -> ã			## conscient coefficient
+[tv]i [[ ent ]] T -> ẽ 			## revient
+(al|xcell) [[ ent ]] T -> ã			## talent équivalent excellent
+(m|e|mo|Lai|[cglr]u)m [[ ent ]] T -> ã	## prudemment vitement moment
+(Ccid|Scli|Slaur|S(mé)?cont|mpét|prés|Ssouv) [[ ent ]] T -> ã ## souvent compétent client
+(s|qui)_couv [[ ent ]] T ->			## elles couvent
+Scouv [[ ent ]] T -> ã				## le couvent
+S(le|un|du|au|[mst]on)_présid [[ ent ]] T -> ã	## le président
+[[ ent ]] T ->					## étaient mangent
+(?<!c)i [[ en ]] ((?![cn])C|T) -> ẽ		## viendra tien
+Sam [[ en ]] T -> ε n				## amen
+LL [[ en ]] s?T -> ẽ				## examen rien 
+[[ en ]] (sT|CL) -> ã				## entre pentathlon 
+Ss [[ ept ]] (T|iè) -> ε t			## sept septième
+S(Ch?|env|hiv?|trav|ti) [[ er ]] s?T -> ε r	## fer cher hier hiver
+(th|w) [[ er ]] s?T -> œ r			## brother power
+[[ er ]] s?T -> e		 			## parler léger
+d [[ e ]] sso?usT -> ə				## dessus dessous
+Sd [[ es ]] [bjnq]V -> e			## Desjardins desquels
+Sl [[ es ]] qV -> e				## lesquels
+(S|V)m [[ es ]] [dn]V -> e			## mesdames Dumesnil
+d [[ esh ]] V -> e z				## Deshormeaux
+S [[ est_ ]] V -> ε t &	 			# liaison: c'est ici
+S [[ est ]] T -> ε		 		## il est
+Sr [[ es ]] V -> ə s				## resaisir resaluer
+Sr [[ e ]] s(s|tr(?!i)) -> ə			## ressembler restructurer
+S[cdlmst] [[ es_ ]] h?V -> e z &		# liaison: mes amis, ces hommes
+S[cdlmst] [[ es ]] T -> e		 	## les des tes
+(Cr|rC) [[ es_ ]] C -> ə &			## fortes dames
+LL [[ es ]] T -> 		 		## dames
+S [[ et ]] T -> e				## et
+S [[ eu ]] T -> y 				## eu
+S [[ eus ]] T -> y 				## j'eus
+S [[ eut ]] T -> y 				## il eut
+[[ eu ]] rs?T -> œ				## peur tracteurs
+[[ eu ]] [bfilnprv] -> ə 			## meuble neuf fieul jeune
+[[ eu ]] -> ø  					## meute tueuse jeu gueuze
+S [[ eû ]] -> y 				## eût
+[[ eû ]] -> ø 					## jeûne
+[[ e ]] x -> ε 					## exact
+[[ ey ]] (C|T) -> e				## dahomey ceylan
+[[ ey ]] -> ε j					## asseye
+[[ ez_ ]] h?V -> e z &				## liaison: profitez-en
+[[ ez ]] T -> e					## nez mangez chez
+S(C+|qu) [[ e ]] T -> ə				## je te que
+(Cr|rC) [[ e_ ]] C -> ə &			## quatre pattes
+[[ e ]] T ->					## montre
+g [[ e ]] V ->	 				## mangeons
+(V|en)(C|qu) [[ e ]] ment ->				## vitement sûrement
+S[dr] [[ e ]] (ch|C[lr]) -> ə			## retracer degré recherche
+(Sl|tr) [[ e ]] C[hlr]?V -> ə			## Leclerc Lebrun entreprise
+[[ e ]] C(C|T) -> ε				## infect pelle mettre
+ll [[ e ]] C ->					## actuellement guillemets
+V(ss?|v) [[ e ]] (g|p)V ->			## sauvegarde passeport
+[[ e ]] -> ə					## menue
+
+u [[ ë ]] ->	 				## ambiguë
+[[ ë ]] -> ε           				## citroën noël
+[[ é ]] -> e 					## été
+[[ è ]] -> ε 					## règle
+[[ ê ]] -> ε 					## fête
+
+S [[ f ]] T -> ε f				## f
+[[ ff ]] -> f					## affaire
+Sneu [[ f_ ]] (ans|heures)T -> v &		# liaison: neuf ans
+[[ f ]] -> f					## feu
+
+S [[ g ]] T -> ʒ e				## g
+su [[ gg ]] [eéè] -> g ʒ			## suggérer suggestif
+[[ gg ]] -> g					## agglomérer
+ai [[ gni ]] -> n j				## craignions châtaignier
+[[ gn ]] -> n j					## agneau
+Squatre_?vin [[ gts_ ]] (V|h) -> z &		## quatre-vingts ans
+Squatre_?vin [[ gt_ ]] -> &			## quatre-vingt-un
+vin [[ gt_ ]] V -> t &				# liaison: vingt ans
+vin [[ gt_ ]] (deux|trois|quatr|cinq|six|sept|huit|neuf) -> t &	# liaison: vingt-trois
+[[ gt ]] s?T -> 				## vingt doigts
+[[ gt ]] -> t					## vingtaine doigté
+ai [[ gu ]] il -> g y				## aiguillage
+in [[ gu ]] is -> g y				## linguiste
+[[ g ]] (C|[auâoû]) -> g			## langage
+S(ran|san|lon) [[ g ]] T -> 			## rang sang long
+[[ g ]] T -> g					## grog gag goulag
+[[ g ]] -> ʒ					## congé george
+
+S [[ h ]] T -> a ʃ				## h
+[[ _h ]] T -> _ a ʃ				## p h d
+[dl] [[ _h ]] [uoô] -> _			## d'huitre aujourd'hui d'hôte
+[[ _h ]] a -> -					## les haches
+[[ h ]] ->					## ahuri
+
+[[ ie ]] ment -> i				## remerciement balbutiement
+[[ i ]] es?T -> i				## parties
+[[ i ]] V -> j					## fermier portier patio renier
+S [[ ill ]] -> i l l				## illégal
+Sm [[ ill ]] -> i l				## mille
+v [[ ill ]] -> i l				## village
+u [[ ill ]] -> i j				## cuillière cueillir
+V [[ ill ]] -> j				## caillou
+[[ ill ]] -> i j				## famille
+[aeu] [[ il ]] s?T -> j				## bail deuil
+[[ imm ]] -> i m m				## immaculé
+[[ im ]] T -> i m				## karim
+[[ im ]] C -> ẽ				## timbre
+[[ ing ]] s?T -> i ŋ				## parking
+[[ in ]] h -> i n				## inhumain
+[[ inct ]] s?T -> ẽ				## distinct
+[[ i ]] nn -> i					## innombrable
+[[ in ]] (C|T) -> ẽ				## vin vingt
+[[ i ]] -> i					## cri
+
+[[ î ]] -> i					## abîme
+[[ în ]] (C|T) -> ẽ				## vînimes
+
+[[ ïn ]] (C|T) -> ẽ				## coïncider
+a [[ ï ]] -> j					## aïeul
+[[ ï ]] -> i					## ambiguïté
+
+S [[ j ]] T -> ʒ i				## j
+[[ j ]] -> ʒ					## adjoint joujoux
+
+S [[ k ]] T -> k a				## k
+[[ k ]] -> k					## képi
+
+S [[ l ]] T -> ε l 				## l
+[[ ll ]] -> l					## aller
+au [[ lt ]] ->					## hérault
+outi [[ l ]] s?T ->				## outil
+Sfi [[ ls ]] T -> s				## fils
+[[ l ]] -> l					## lit
+
+S [[ m ]] T -> ε m				## m
+[[ mm ]] -> m					## pomme
+[[ monsieur ]] -> m ə s j ø			## monsieur
+[[ montréal ]] -> m õ r e a l			## Montréal
+[[ m ]] -> m					## film
+
+S [[ n ]] T -> ε n 				## n
+V [[ ng ]] T -> ŋ				## parking meeting
+[[ nn ]] -> n					## panne
+[[ n ]] -> n					## une
+[[ ñ ]] -> ŋ i					## niño
+
+cr [[ oc ]] s?T -> o 				## escroc
+[[ o ]] ch -> o 				## cochon
+[[ oe ]] ll -> w a 				## moelleux
+S [[ oe ]] C -> ø				## oesophage 
+[[ o ]] eu ->					## soeur oeuf
+[[ o ]] eC -> o					## coefficient
+S [[ oi ]] gnon -> ɔ				## oignons
+[[ o ]] ing -> u				## doing
+[[ oin ]] (C|T) -> w ẽ				## coin
+[[ oi ]] -> w a 				## poil
+[[ oê ]] l -> w ε 				## poêle
+[[ oî ]] -> w a 				## boîte
+S [[ ok ]] T -> o k e				## OK
+[[ o ]] mm -> ɔ					## comme
+dr [[ o ]] meT -> o 				## vélodrome
+[[ om ]] [bp] -> õ				## bombe
+n [[ om ]] s?T -> õ				## nom noms 
+[[ om ]] T -> ɔ m				## www.web.com
+[[ on ]] T -> õ				## mon
+[[ o ]] nn -> ɔ					## bonne
+(z|chr) [[ o ]] nes?T -> o			## amazone
+[[ on ]] (?!h)C -> õ				## donc
+alc [[ oo ]] l -> ɔ				## alcool
+z [[ oo ]] -> o					## zoo
+[[ oo ]] -> u					## pool
+S[gs]al [[ op ]] s?T -> o			## galops salop
+Ssir [[ op ]] s?T -> o				## sirop
+Str [[ op ]] T -> o				## trop
+[[ o ]] sT -> o					## gros dos
+v [[ ost ]] T -> o				## Prévost
+[[ o ]] sV -> o					## poser
+[[ ot ]] s?T -> o				## mot dépots
+[cl] [[ oup ]] s?T -> u				## loups beaucoup
+[[ ou ]] -> u					## hibou brouillard
+[[ où ]] -> u 					## où
+[[ oû ]] -> u					## coûter
+[[ oyes ]] T -> w a 				## troyes
+[[ oy ]] V -> w a j				## noyer voyelles
+[[ oy ]] -> w a					## roy
+[[ o ]] z?T -> o				## zorro allégro berlioz
+[[ o ]] [mn]o -> o				## nono
+o[mn] [[ o ]] -> o				## monocorde
+[[ o ]] -> ɔ					## sobre notions émotions
+
+[[ ôt ]] s?T -> o				## rôt
+[[ ô ]] -> o 					## cône
+[[ ö ]] -> ɔ 					## angström
+
+S [[ p ]] T -> p e				## p
+[mr] [[ ps ]] T ->				## corps temps champs
+ch?am [[ p ]] s?T ->				## camp contrechamp
+dra [[ p ]] s?T ->				## draps sparadrap
+(ba|com) [[ p ]] t ->				## baptiser compte
+C [[ pt ]] s?T ->				## prompt exempt
+[[ ph ]] -> f					## phrase
+[[ pp ]] -> p					## appliquer
+[[ p ]] -> p					## pas
+
+S [[ q ]] T -> k y				## q
+[[ qu' ]] -> k					## qu'il
+[[ qu ]] -> k					## quatre
+n [[ q_ ]] c -> &				## cinq cent
+[[ q ]] -> k					## coq
+
+S [[ r ]] T -> ε r				## r
+[[ right ]] -> r a j t				## copyright
+Ssu [[ rr ]] -> R r				## surréaliste
+ou [[ rr ]] -> R r				## courrai 
+[[ rr ]] -> r					## erreur 
+[[ r ]] -> r					## rien
+
+S [[ s ]] T -> ε s				## s
+[[ s' ]] -> s					## s'amène
+[[ sç ]] -> s					## immisça
+[[ sch ]] (iz|ol|oo) -> s k			## schizophrène
+[[ sch ]] -> ʃ					## schéma
+dé [[ sh ]] V -> z				## déshabiller
+[[ sh ]] -> ʃ					## shérif
+[[ ss ]] -> s					## assez
+ai [[ s ]] em -> s				## vraisemblable
+ub [[ s ]] is -> z				## subsister
+an [[ s ]] on -> s				## chanson
+(V|CCan) [[ s ]] V -> z				## baiser transition
+S(mi|il|[dnv]o|écu) [[ s_ ]] V -> z &  		# liaison
+S(an?|[bcprv]a|e|dè|[dflmp]i|il|[dnv]o|écu|[dflpv]u|un) [[ s ]] T ->  ## cas dos pas vus ils
+(S|[im])bu [[ s ]] T -> s			## bus nimbus
+#([cimnp]|[lu]l|Vs)u [[ s ]] T -> s		## focus phallus cumulus minus
+([cimnp]|[lu]l)u [[ s ]] T -> s		## focus phallus cumulus minus
+[acio]tu [[ s ]] T -> s				## stratus cactus motus
+S(mar|sen) [[ s ]] T -> s			## sens mars
+Stou [[ s_ ]] (([lms]e|[nv]o|leur)s|ceux)T -> _	## à tous les jours pour tous
+Stou [[ s ]] T -> s				## à tous les jours pour tous.
+LLL [[ s_ ]] V -> z &	 			# liaison: arbres en avant
+LLL [[ s ]] T ->	 			## grands mesdames objets
+LLLs [[ _ ]] h?V -> z &	 			# liaison: les arbres en avant
+[[ s ]] [bdgjv] -> z 				## sbire
+[[ s ]] -> s 					## verser sien
+
+S [[ t ]] T -> t e				## t
+[[ t' ]] -> t					## t'amène
+[[ tt ]] -> t					## attitude
+s [[ th ]] m ->					## asthme
+[[ th ]] -> t					## théorie
+hui [[ t ]] (P|T(?!C)) -> t			## huit
+aoû [[ t ]] T -> t				## août
+S [[ t ]] -> t					## tien tiers
+an [[ t ]] ia -> t				## Santiago
+V[mn]?[cpr]?(?<!bu) [[ t ]] i[ao] -> s		## tertiaire initiation option
+[[ t ]] ie[lm] -> s 				## partiel patiemment
+(mar|i|pa) [[ t ]] ien -> s			## martien vénitienne
+(Cu|cra|ner) [[ t ]] ies?T -> s			## minutie inertie démocratie
+(ne|ru) [[ t ]] s?T -> t			## brut rut net
+S(es|son|tou) [[ t_ ]] V -> t &			# liaison: c'est un tout autre
+(a|[nrû]|V{2}|L{2}V|cha) [[ t ]] s?T -> 		## fort chats eût peut point
+S(ra|[dfl]i|[lmps]o|[dfl]u) [[ t ]] s?T ->  ## rat lit mot
+[[ t ]] -> t					## bataille
+
+[cg] [[ ueill ]] -> œ j				## orgueilleux
+[cg] [[ ueil ]] T -> œ j			## orgueil
+parf [[ um ]] s?T -> ǣ				## parfum
+[[ um ]] s?T -> ɔ m				## album
+[[ um ]] [bp] -> ǣ				## humble
+[[ un ]] (C|T) -> ǣ				## emprunt brun lundi
+g [[ u ]] [aeioîâéèêy] ->			## fatigue
+[[ u ]] i -> ɥ					## huitre nuit huile
+[[ u ]] -> y					## cruel nuage brut
+
+[[ û ]] -> y					## fûtes
+[[ ü ]] -> y					## bülcher
+
+S [[ v ]] T -> v e				## v
+[[ v ]] -> v					## cave
+
+S [[ w ]] T -> d u b l ə v e			## w
+LL [[ ware ]] T -> w ε r			## hardware, software
+[[ w ]] -> w					## watt
+
+S [[ x ]] T -> i k s				## x
+[[ xs ]] -> k s					## exsuder
+Se [[ x ]] (V|h) -> g z				## exagérer exemple exhumer
+[aor]i [[ x ]] T ->				## voix paix prix
+Ssoi [[ x ]] V ->	s			## soixante
+[aeo]u [[ x_ ]] V -> z &			# liaison: foux en
+[aeo]u [[ x ]] T ->				## faux toux beaux foux jeux
+Sau [[ x ]] quel ->				## auxquels
+S[ds]i [[ x_ ]] (V|h) -> z &			# liaison: six ans
+S[ds]i [[ x_ ]] neuf -> z &			# liaison: dix-neuf
+S[ds]i [[ x_ ]] C -> &				# liaison: six persones
+([ds]i|eu) [[ x ]] iè -> z			## dixième deuxième
+S[ds]i [[ x ]] T -> s				## six, dix
+[[ x ]] -> k s					## lexique lexicaux vox
+
+[[ ym ]] [bp] -> ẽ				## tympan
+[[ y ]] n(n|s?T) -> i				##
+[[ yn ]] -> ẽ					## laryngite
+[[ y ]] -> i					## cryogénique myope
+
+S [[ z ]] T -> z ε d				## z
+[[ zz ]] -> z					## razzia
+t [[ z ]] -> s 					## tzigane
+[[ z ]] -> z					## zéro
+
+S([eou]n|[mst]on) [[ _ ]] h?V -> n &		# liaison: un avion orange
+Scent [[ _ ]] (une?|huit|onze?)(T|ièm) -> _	# !liaison: cent onze
+Scent [[ _ ]] h?V -> t &			# liaison: cent ans
+
+[[ _ ]] -> _					# espace
+[[ ' ]] -> 					# apostrophe
+
+[[ . ]] -> .
+[[ , ]] -> ,
+[[ ; ]] -> ,
+[[ : ]] -> :
+[[ ! ]] -> !
+[[ ? ]] -> ?
+
+
+# Filtres pré-phonétisation
+
+# Attention: la partie "produite" n'est traitée que par les filtres
+# subséquents.
+
+# Attention: Lorsqu'on match S, T ou _ (espace) on le consomme.
+# Les classes B et E sont des équivalents de S et T mais sans ce problème.
+
+CLASS B (?:^|(?<=\s|P|\'))			# limite gauche d'un mot
+CLASS E (?=$|\s|P)				# limite droite d'un mot
+
+BciceroE		-> "cicéro"
+BetcE			-> "ètcétéra"
+Bm\.(?=_|$)		-> "monsieur"
+BmbrolaE		-> "m brola"
+BmmeE			-> "madame"
+BmlleE			-> "mademoiselle"
+Bp\.sE			-> "postscriptum"
+Bst-			-> "saint "
+Bste-			-> "sainte "
+Bs\.t\.pE		-> "s'il te plait"
+Bs\.v\.pE		-> "s'il vous plait"
+
+Bquelqu'unE		-> "quelquun"
+(?<=V)-t-(?=V)		-> "-t'"
+(?<=V)(n?t)-(?=V)	-> "\1-t'"
+B(à|de|vers)\sl'estE	-> "\1 l'èst"
+BmailE			-> "mél"
+
+# signe moins
+B-(N)		-> "moins \1"
+# format numéro de téléphone
+(?<!N)(N)(N)(N)-(N)(N)(N)-(N)(N)(N)(N) -> " \1 \2 \3, \4 \5 \6, \7 \8 \9 \g<10> "
+(?<!N)(N)(N)(N)-(N)(N)(N)(N) -> " \1 \2 \3, \4 \5 \6 \7 "
+# Tiret entre chiffres
+(?<=N)-(?=N)	-> " tiret "
+# traduit les points/virgules décimales:
+\s+\.(?=N) -> ", point "
+\s+,(?=N) -> ", virgule "
+\.(?=N)	-> " point "
+,(?=N)	-> " virgule "
+# rajoute un espace entre un chiffre et une lettre:
+(\d)((?!_)\D)	-> "\1 \2"
+((?!_)\D)(\d)	-> "\1 \2"
+# Recombine les nombres écrits avec un espace comme séparateur
+(?<!N)(N{1,3})_(?=N{3}T) -> "\1"
+# autrement ajoute une virgule entre nombres séparés par des espaces
+# pour entre autres éviter confusion entre "3 1234" et "3234"
+(?<=N)\s+(?=N{2,})	-> ", "
+
+# Nombres
+(N)(?=N{12,})	-> "\1 "
+B0		-> "zéro "
+([1-9]N*)(?=N{9})	-> "\1 milliard "
+([1-9]N*)(?=N{6})	-> "\1 million "
+(?<!N)1(?=N{3}T)	-> "mille "
+([1-9]N*)(?=N{3})	-> "\1 mille "
+1(?=N{2}T)	-> "cent "
+([2-9])00(?=T)	-> "\1 cents "
+([1-9])(?=N{2})	-> "\1 cent "
+9(?=N)		-> "quatre-vingt 1"
+80		-> "quatre-vingts "
+8(?=N)		-> "quatre-vingt "
+71		-> "soixante et onze"
+7(?=N)		-> "soixante 1"
+61		-> "soixante et un"
+6(?=N)		-> "soixante "
+51		-> "cinqante et un"
+5(?=N)		-> "cinquante "
+41		-> "quarante et un"
+4(?=N)		-> "quarante "
+31		-> "trente et un"
+3(?=N)		-> "trente "
+21		-> "vingt et un"
+2(?=N)		-> "vingt "
+16		-> "seize "
+15		-> "quinze "
+14		-> "quatorze "
+13		-> "treize "
+12		-> "douze "
+11		-> "onze "
+10		-> "dix "
+1(?=N)		-> "dix-"
+9		-> "neuf "
+8		-> "huit "
+7		-> "sept "
+6		-> "six "
+5		-> "cinq "
+4		-> "quatre "
+3		-> "trois "
+2		-> "deux "
+1		-> "un "
+0		-> ""
+
+# ponctuations prononcées si pas suivi d'un espace
+\.(?!($|\s))	-> " point "
+\,(?!($|\s))	-> " virgule "
+\?(?!($|\s))	-> " question "
+\!(?!($|\s))	-> " exclamation "
+\:(?!($|\s))	-> " deux points "
+\;(?!($|\s))	-> " point virgule "
+
+# prononce "tiret" quand il n'est pas entouré de lettres
+# FIXME
+#\-(?!L)		-> " tiret "
+#(?!L)\-		-> " tiret "
+
+# élimine les répétitions excessives (limite à 4 répétitions)
+(.)(\1){4,}		-> "\1\1\1\1"
+
+# noms des autres symboles
+"		-> " guillemet "
+\#		-> " dièze "
+\$		-> " dollard "
+\%		-> " pour-cent "
+\&		-> " et "
+\(		-> " ouvre parenthèse "
+\)		-> " ferme parenthèse "
+\*		-> " astérisque "
+\+		-> " pluss "
+\/		-> " slash "
+<		-> " inférieur "
+=		-> " égal "
+>		-> " supérieur "
+\@		-> " att "
+\[		-> " ouvre crochet "
+\\		-> " backslash "
+\]		-> " ferme crochet "
+\^		-> " circonflexe "
+\_		-> " souligné "
+`		-> " accent grâve "
+\{		-> " ouvre accolade "
+\|		-> " barre "
+\}		-> " ferme accolade "
+~		-> " tilde "
+¢		-> " cennt "
+¥		-> " yenns "
+£		-> " livres "
+°		-> " degré "
+±		-> " plus ou moins "
+×		-> " multiplié par "
+÷		-> " divisé par "
+¼		-> " un quart "
+½		-> " un demi "
+¾		-> " trois quarts "
+©		-> " copyright "
+®		-> " registred mark "
+
+# If these get re-ordered, no production must include - after this one.
+-		-> " "
+
+# les successions de consonnes inprononçables doivent être épelées
+B(C)(C)E	-> "\1 \2"
+B(C)(C)(C)E	-> "\1 \2 \3"
+B(C)(C)(C)(C)E	-> "\1 \2 \3 \4"
+B(C)(C)(C)(C)(C)E	-> "\1 \2 \3 \4 \5"	## https
+(C)(\1)(\1)	-> " \1 \1 \1 "
+Br(C)(V)E	-> " r \1 \2 "
+
+# enlève les espaces autour des ponctuations:
+\s*([\.\!\?\:\;\,\'])\s* -> "\1"
+# réduit les blancs
+\s+		-> " "
+# enlève les blancs à la fin
+\s+$		-> ""
